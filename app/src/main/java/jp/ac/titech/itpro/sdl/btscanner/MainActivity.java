@@ -3,6 +3,7 @@ package jp.ac.titech.itpro.sdl.btscanner;
 import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -21,6 +22,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -28,6 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -84,6 +87,39 @@ public class MainActivity extends AppCompatActivity {
         devListView = (ListView) findViewById(R.id.dev_list);
         assert devListView != null;
         devListView.setAdapter(devListAdapter);
+
+        // set onItemClick listener
+        devListView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int pos, long id){
+                BluetoothDevice btDevice = devList.get(pos);
+
+                //Log.d("OnItemClickListener", new Integer(btDevice.getBluetoothClass().getDeviceClass()).toString());
+                String deviceClassName = DeviceClassToString.get(btDevice.getBluetoothClass().getDeviceClass());
+                if(deviceClassName == null) deviceClassName = "(Unknown)";
+
+                String stateName = "(Unknown)";
+                switch (btDevice.getBondState()){
+                    case BluetoothDevice.BOND_NONE:
+                        stateName = "not connected";
+                        break;
+                    case BluetoothDevice.BOND_BONDED:
+                        stateName = "connected";
+                        break;
+                    case BluetoothDevice.BOND_BONDING:
+                        stateName = "connecting";
+                        break;
+                }
+
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(btDevice.getName())
+                        .setMessage("Address : " + btDevice.getAddress() +
+                                    "\nDevice Class : " + deviceClassName +
+                                    "\nState : " + stateName)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+        });
 
         btAdapter = BluetoothAdapter.getDefaultAdapter();
         if (btAdapter == null) {
@@ -271,4 +307,9 @@ public class MainActivity extends AppCompatActivity {
             break;
         }
     }
+
+    private HashMap<Integer, String> DeviceClassToString = new HashMap<Integer, String>() {{
+        put(BluetoothClass.Device.COMPUTER_LAPTOP, "Computer::Laptop");
+        put(BluetoothClass.Device.COMPUTER_UNCATEGORIZED, "Computer::Uncategorized");
+    }};
 }
